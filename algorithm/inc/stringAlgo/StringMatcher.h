@@ -3,7 +3,6 @@
 #include <vector>
 
 using std::vector;
-
 using std::string;
 
 USI_NS_BEGIN
@@ -83,9 +82,6 @@ private:
 private:
     vector<int> dfs;
     string pat;
-
-private:
-
 };
 
 USI_NS_END
