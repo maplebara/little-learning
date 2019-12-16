@@ -8,16 +8,18 @@ SET(lib_dir          ${current_dir}/3rd/lib)
 
 project(littleLearning)
 
-add_compile_options(-std=c++11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -ggdb")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb -std=c11")
 
 include_directories(
 ${code_dir}/inc
 ${3rd_dir}/gtest/inc/
+${ft_dir}/inc
 )
 
-FILE(GLOB SRC_LIST
+FILE(GLOB_RECURSE  SRC_LIST
     "${ft_dir}/src/*.cpp"
-    "${code_dir}/src"
+    "${code_dir}/src/*"
 )
 
 add_subdirectory(${3rd_dir}/gtest)

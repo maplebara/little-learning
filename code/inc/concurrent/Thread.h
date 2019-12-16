@@ -1,10 +1,10 @@
 #ifndef __LITTLE_LEARNING_CONCURRENT_THREAD_H__
 #define __LITTLE_LEARNING_CONCURRENT_THREAD_H__
 
-#include "BasicMacro.h"
+#include "basic/BasicMacro.h"
 #include <pthread.h>
 #include "functional"
-#include "UnCopyable.h"
+#include "basic/UnCopyable.h"
 
 USI_NS_BEGIN
 
@@ -13,7 +13,7 @@ struct Thread : UnCopyable
     Thread(std::function<void()> exec);
     ~Thread();
 
-    void start();
+    void join();
 
     pthread_t getTid() const { return tid; }
 

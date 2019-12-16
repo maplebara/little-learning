@@ -1,8 +1,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
-#include "../basic/BasicMacro.h"
+#include "basic/BasicMacro.h"
 
-int main(int argv, char* args[])
+int open()
 {
     int sockfd;
 
@@ -10,4 +10,5 @@ int main(int argv, char* args[])
 
     USI_ASSERT_TRUE(sockfd > 0);
 
+    return 0;
 }

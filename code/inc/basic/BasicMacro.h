@@ -13,7 +13,7 @@
 
 //////////////////////////
 
-#define USI_NS_BEGIN namespace {
+#define USI_NS_BEGIN namespace usi {
 #define USI_NS_END }
 
 

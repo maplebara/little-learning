@@ -1,8 +1,10 @@
 #include "gtest/gtest.h"
 #include "algorithm/StringMatcher.h"
 
+using namespace usi;
+
 class FtAlgorithm : public ::testing::Test {
- protected:
+protected:
     void SetUp() override {
     }
 

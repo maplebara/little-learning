@@ -1,6 +1,13 @@
-#include "Thread.h"
+#include "concurrent/Thread.h"
 #include <system_error>
 #include <cerrno>
+
+USI_NS_BEGIN
+
+namespace {
+    thread_local Thread* self_thread = nullptr;
+
+}
 
 Thread::Thread(std::function<void()> exec) : exec(exec)
 {
@@ -14,10 +21,23 @@ Thread::Thread(std::function<void()> exec) : exec(exec)
 
 Thread::~Thread()
 {
+    pthread_detach(tid);
     pthread_attr_destroy(&attr);
 }
 
-void Thread::start()
+void* Thread::run(void* args)
+{
+    Thread* thread = (Thread*)args;
+    self_thread = thread;
+
+    thread->exec();
+
+    return 0;
+}
+
+void Thread::join()
 {
 
 }
+
+USI_NS_END
