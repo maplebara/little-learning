@@ -1,4 +1,4 @@
-#include "BasicMacro.h"
+#include "basic/BasicMacro.h"
 #include <string>
 #include <vector>
 
@@ -72,7 +72,7 @@ private:
             while(k > 0 && pat[k + 1] != pat[i])
                 k = dfs[k];
             
-            if(pat[k + 1] = pat[i])
+            if(pat[k + 1] == pat[i])
                 k++;
             
             dfs[i] = k;

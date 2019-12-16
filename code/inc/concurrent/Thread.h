@@ -10,12 +10,15 @@ USI_NS_BEGIN
 
 struct Thread : UnCopyable
 {
-    Thread(std::function<void()> exec) : exec(exec) {}
-    ~Thread() {}
+    Thread(std::function<void()> exec);
+    ~Thread();
 
     void start();
 
     pthread_t getTid() const { return tid; }
+
+private:
+    static void* run(void*);
 
 private:
     pthread_t tid{0};
