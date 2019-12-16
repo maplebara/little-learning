@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 
-SET(current_dir     ${CMAKE_CURRENT_SOURCE_DIR})
-SET(ft_dir          ${current_dir}/ftest)
-SET(3rd_dir         ${current_dir}/3rd)
-SET(lib_dir         ${current_dir}/3rd/lib)
+SET(current_dir      ${CMAKE_CURRENT_SOURCE_DIR})
+SET(ft_dir           ${current_dir}/ftest)
+SET(3rd_dir          ${current_dir}/3rd)
+SET(lib_dir          ${current_dir}/3rd/lib)
 
 project(littleLearning)
 

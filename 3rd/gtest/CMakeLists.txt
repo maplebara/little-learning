@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 
-SET(current_dir     ${CMAKE_CURRENT_SOURCE_DIR})   
-SET(inc_dir         ${current_dir}/inc)
-SET(src_dir         ${current_dir}/src)
+SET(current_dir      ${CMAKE_CURRENT_SOURCE_DIR})   
+SET(inc_dir          ${current_dir}/inc)
+SET(src_dir          ${current_dir}/src)
 
 INCLUDE_DIRECTORIES(
     "${inc_dir}"
