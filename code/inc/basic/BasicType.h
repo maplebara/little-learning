@@ -1,5 +1,9 @@
 #pragma once 
 
+#include "basic/BasicMacro.h"
+
+USI_NS_BEGIN
+
 typedef    signed char         int8_t;
 typedef    signed short        int16_t;
 typedef    signed long         int32_t;
@@ -47,3 +51,5 @@ IS_BASE_TYPE(U32)
 IS_BASE_TYPE(S32)
 IS_BASE_TYPE(U64)
 IS_BASE_TYPE(S64)
+
+USI_NS_END
