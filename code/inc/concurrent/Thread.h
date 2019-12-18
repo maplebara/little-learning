@@ -14,6 +14,9 @@ struct Thread : UnCopyable
     ~Thread();
 
     void join();
+    void detach();
+
+    bool isDetached() const;
 
     pthread_t getTid() const { return tid; }
 

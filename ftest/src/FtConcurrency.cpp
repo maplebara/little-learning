@@ -16,6 +16,7 @@ protected:
 TEST_F(FtConcurrency, class_Thread_Test)
 {
     Thread thread(action);
+    thread.join();
     printf("hello\n");
 }
 

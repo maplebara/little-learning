@@ -25,6 +25,8 @@ typedef    uint16_t   U16;
 typedef    uint32_t   U32;
 typedef    uint64_t   U64;
 
+const U32 INVALID_U32 = 0xffffffff;
+
 template<typename T>
 class IsBaseType
 {

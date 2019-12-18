@@ -17,12 +17,14 @@ Thread::Thread(std::function<void()> exec) : exec(exec)
     {
         throw std::system_error(std::error_code(), "pthread_create error");
     }
+    printf("create\n");
 }
 
 Thread::~Thread()
 {
     pthread_detach(tid);
     pthread_attr_destroy(&attr);
+    printf("ruin\n");
 }
 
 void* Thread::run(void* args)
@@ -37,7 +39,27 @@ void* Thread::run(void* args)
 
 void Thread::join()
 {
+    if(isDetached()) 
+    {
+        printf("The thread is detached!!\n");
+        return ;
+    }
+    pthread_join(tid, nullptr);
+}
 
+void Thread::detach()
+{ 
+    if(isDetached()) return ;
+    pthread_detach(tid);
+}
+
+bool Thread::isDetached() const
+{
+    int state = 0;
+
+    pthread_attr_getdetachstate(&attr, &state);
+
+    return state == PTHREAD_CREATE_DETACHED;
 }
 
 USI_NS_END
