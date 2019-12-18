@@ -14,7 +14,7 @@ class Root : public Unkown,
              A
 {
 public:
-    void* castTo(WORD32 iid)
+    void* castTo(U32 iid)
     {
         switch(iid)
         {

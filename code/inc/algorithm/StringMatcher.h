@@ -1,4 +1,5 @@
 #include "basic/BasicMacro.h"
+#include "basic/BasicType.h"
 #include <string>
 #include <vector>
 
@@ -7,12 +8,12 @@ using std::string;
 
 USI_NS_BEGIN
 
-int match(const string& str, const string& pat)
+S32 match(const string& str, const string& pat)
 {
-    int n = str.size(), m = pat.size();
-    for(int i = 0; i <= n - m; ++i)
+    S32 n = str.size(), m = pat.size();
+    for(S32 i = 0; i <= n - m; ++i)
     {
-        int j = 0;
+        S32 j = 0;
         while(j < m)
         {
             if (str[i + j] != pat[j]) break;
@@ -28,10 +29,10 @@ struct KmpMatcher
 {
     KmpMatcher(const string& pat) : dfs(pat.size(), 0), pat(pat) {}
 
-    int match(const string& text)
+    S32 match(const string& text)
     {
-        int matched = 0;
-        for(int i = 0; i < text.size(); ++i)
+        S32 matched = 0;
+        for(S32 i = 0; i < text.size(); ++i)
         {
             while(matched > 0 && pat[matched] != text[i])
                 matched = dfs[matched];
@@ -45,11 +46,11 @@ struct KmpMatcher
         return -1;
     }
 
-    vector<int> matchAll(const string& text)
+    vector<S32> matchAll(const string& text)
     {
-        vector<int> ans;
-        int matched = 0;
-        for(int i = 0; i < text.size(); ++i)
+        vector<S32> ans;
+        S32 matched = 0;
+        for(S32 i = 0; i < text.size(); ++i)
         {
             while(matched > 0 && pat[matched] != text[i])
                 matched = dfs[matched];
@@ -66,8 +67,8 @@ struct KmpMatcher
 private:
     void computeDfs()
     {
-        int k = 0;
-        for(int i = 1; i < pat.size(); ++i)
+        S32 k = 0;
+        for(S32 i = 1; i < pat.size(); ++i)
         {
             while(k > 0 && pat[k + 1] != pat[i])
                 k = dfs[k];
@@ -80,7 +81,7 @@ private:
     }
 
 private:
-    vector<int> dfs;
+    vector<S32> dfs;
     string pat;
 };
 

@@ -3,10 +3,10 @@
 class Unkown
 {
 public:
-    virtual void* castTo(WORD32 iid) = 0;
+    virtual void* castTo(U32 iid) = 0;
 };
 
-template<WORD32 iid>
+template<U32 iid>
 class Interface
 {
 public:
