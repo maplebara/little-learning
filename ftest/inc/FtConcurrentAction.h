@@ -10,7 +10,7 @@ struct FtConcurrentAction
     static void action()
     {
         printf("The thread is starting.\n");
-        // std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         printf("The thread end.\n");
     }
 };

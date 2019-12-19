@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include "functional"
 #include "basic/UnCopyable.h"
+#include <semaphore.h>
 
 USI_NS_BEGIN
 
@@ -18,14 +19,17 @@ struct Thread : UnCopyable
 
     bool isDetached() const;
 
-    pthread_t getTid() const { return tid; }
+    pthread_t getThreadId() const { return threadId; }
+    pid_t  getTid() const { return tid; } 
 
 private:
     static void* run(void*);
 
 private:
-    pthread_t tid{0};
+    pid_t tid{-1};            //posix线程库的线程实现为一个轻量级进程(LWP)，其具有一个真实的进程ID，通常被称为tid。
+    pthread_t threadId{0};    //由posix线程库维护的线程ID，不同进程中线程ID可能重复
     pthread_attr_t attr;
+    sem_t semaphore;
 
     std::function<void()> exec;
 };
