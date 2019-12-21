@@ -23,12 +23,34 @@ Thread::Thread(std::function<void()> exec) : exec(exec)
     printf("create\n");
 }
 
+Thread::Thread(std::function<void(void* args)> exec, void* args) : func(exec), args(args)
+{
+    pthread_attr_init(&attr);
+    sem_init(&semaphore, PTHREAD_PROCESS_PRIVATE, 0);
+    int ret = pthread_create(&threadId, &attr, &Thread::run, this);
+    if(ret)
+    {
+        throw std::system_error(std::error_code(), "pthread_create error");
+    }
+    sem_wait(&semaphore);
+}
+
+Thread::Thread(Thread&& other)
+{
+    std::swap(tid, other.tid);
+    std::swap(threadId, other.threadId);
+    std::swap(attr, other.attr);
+    std::swap(semaphore, other.semaphore);
+    exec.swap(other.exec);
+    func.swap(other.func);
+    std::swap(args, other.args);
+}
+
 Thread::~Thread()
 {
-    pthread_detach(threadId);
+    // pthread_detach(threadId);
     pthread_attr_destroy(&attr);
     sem_destroy(&semaphore);
-    printf("ruin\n");
 }
 
 void* Thread::run(void* args)
@@ -39,7 +61,14 @@ void* Thread::run(void* args)
     thread->tid = GetTid();
 
     sem_post(&(thread->semaphore));
-    thread->exec();
+    if(thread->args)
+    {
+        thread->func(thread->args);
+    }
+    else
+    {
+        thread->exec();
+    }
 
     return 0;
 }

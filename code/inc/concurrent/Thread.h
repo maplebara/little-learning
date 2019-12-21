@@ -12,6 +12,9 @@ USI_NS_BEGIN
 struct Thread : UnCopyable
 {
     Thread(std::function<void()> exec);
+    Thread(std::function<void(void* args)>, void* args);
+
+    Thread(Thread&& other);
     ~Thread();
 
     void join();
@@ -32,6 +35,8 @@ private:
     sem_t semaphore;
 
     std::function<void()> exec;
+    std::function<void(void*)> func;
+    void* args{nullptr};
 };
 
 USI_NS_END
