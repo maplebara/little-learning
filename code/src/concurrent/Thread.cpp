@@ -20,7 +20,6 @@ Thread::Thread(std::function<void()> exec) : exec(exec)
         throw std::system_error(std::error_code(), "pthread_create error");
     }
     sem_wait(&semaphore);
-    printf("create\n");
 }
 
 Thread::Thread(std::function<void(void* args)> exec, void* args) : func(exec), args(args)
@@ -48,7 +47,6 @@ Thread::Thread(Thread&& other)
 
 Thread::~Thread()
 {
-    // pthread_detach(threadId);
     pthread_attr_destroy(&attr);
     sem_destroy(&semaphore);
 }

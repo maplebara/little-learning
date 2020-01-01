@@ -12,24 +12,31 @@
 
 using namespace usi;
 
+static SpinLock spinlock;
+static CasLock casLock;
+
 struct FtConcurrentAction
 {
-    static void action()
-    {
-        printf("The thread is starting.\n");
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        printf("The thread end.\n");
-    }
-
     static void assgin(void* count)
     {
         U32* ptr = (U32*)count;
-        SpinLock lock;
+        spinlock.lock();
         for(int i = 0; i < 10000; ++i)
         {
             ++(*ptr);
         }
-        printf("thread[%u] update count %lu!!\n", GetTid(), *ptr);
+        spinlock.unlock();
+    }
+
+    static void assginCas(void* count)
+    {
+        U32* ptr = (U32*)count;
+        casLock.lock();
+        for(int i = 0; i < 10000; ++i)
+        {
+            ++(*ptr);
+        }
+        casLock.unlock();
     }
 };
 

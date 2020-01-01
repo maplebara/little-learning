@@ -12,12 +12,10 @@ struct SpinLock
     SpinLock()
     {
         pthread_spin_init(&m_lock, PTHREAD_PROCESS_PRIVATE);
-        lock();
     }
 
     ~SpinLock()
     {
-        unlock();
         pthread_spin_destroy(&m_lock);
     }
 
@@ -56,24 +54,6 @@ private:
     std::atomic_flag m_lock;
 };
 
-// template<typename T>
-// struct RawSpinLock
-// {
-//     void lock()
-//     {
-//         m_lock.lock();
-//     }
-
-//     void unlock()
-//     {
-//         m_lock.unlock();
-//     }
-
-// private:
-//     T m_lock;
-// };
-
-// using SpinLock = RawSpinLock
 
 USI_NS_END
 

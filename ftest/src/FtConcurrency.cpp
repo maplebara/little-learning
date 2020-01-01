@@ -14,13 +14,6 @@ protected:
     void TearDown() override {  }
 };
 
-TEST_F(FtConcurrency, class_Thread_Test)
-{
-    Thread thread(action);
-    thread.join();
-    printf("hello\n");
-}
-
 TEST_F(FtConcurrency, Spin_lock_Test)
 {
     U32 num = 0;
@@ -34,7 +27,23 @@ TEST_F(FtConcurrency, Spin_lock_Test)
     {
         threads[i].join();
     }
-    printf("end!!\n");
+    ASSERT_EQ(num, 100 * 1000);
+}
+
+TEST_F(FtConcurrency, Cas_lock_Test)
+{
+    U32 num = 0;
+    std::vector<Thread> threads;
+    for(int i = 0; i < 10; ++i)
+    {
+        threads.emplace_back(assginCas, &num);
+    }
+    
+    for(int i = 0; i < 10; ++i)
+    {
+        threads[i].join();
+    }
+    ASSERT_EQ(num, 100 * 1000);
 }
 
 
