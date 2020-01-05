@@ -51,5 +51,11 @@ void ttcpClient(const char* hostName, uint16_t port, uint32_t msgLen, uint32_t m
         assert(rLen == sizeof(uint32_t));
     }
 
+    free(message);
     close(sockfd);
+}
+
+int main(int argv, char* args[])
+{
+    ttcpClient(args[1], atoi(args[2]), atoi(args[3]), atoi(args[4]));
 }

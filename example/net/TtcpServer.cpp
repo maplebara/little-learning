@@ -73,10 +73,15 @@ void ttcpServer(uint16_t port)
             ssize_t wLen = write(fd, &ack, sizeof(uint32_t));
             assert(wLen == sizeof(uint32_t));
         }
-
+        free(message);
         close(fd);
     }
     close(listenFd);
+}
+
+int main(int argv, char* args[])
+{
+    ttcpServer(atoi(args[1]));
 }
 
 

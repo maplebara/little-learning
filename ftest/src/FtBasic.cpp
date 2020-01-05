@@ -15,6 +15,9 @@ TEST_F(FtBasic, struct_memory_assign)
 {
     ASSERT_EQ(sizeof(TestData), 8);
     ASSERT_EQ(sizeof(TestData1), 5);
+    ASSERT_EQ(sizeof(TestData2), 1);
+    ASSERT_EQ(sizeof(TestData3), 16);
+    ASSERT_EQ(sizeof(TestData4), 1);
     ASSERT_EQ(sizeof(SessionMessage), 8);
 }
 
