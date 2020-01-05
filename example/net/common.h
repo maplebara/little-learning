@@ -17,3 +17,10 @@ struct SessionMessage
     uint32_t length; 
     uint32_t number;
 }__attribute__ ((__packed__));
+
+struct PayLoad
+{
+    uint32_t length; 
+    char payLoad[0];
+};
+
