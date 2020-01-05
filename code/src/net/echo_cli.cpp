@@ -35,7 +35,8 @@ void echoClient(const char* hostName, uint16_t port)
         if(read(sockfd, data, sizeof(data)) == 0)
             perror("the string end!!\n");
 
-        std::cout << data << std::endl;
+        printf("normal reflect: %s\n", data);
+        memset(data, 0, sizeof(data));
     }
     close(sockfd);
 }

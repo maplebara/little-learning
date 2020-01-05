@@ -24,6 +24,11 @@ FILE(GLOB_RECURSE  SRC_LIST
 
 add_subdirectory(${3rd_dir}/gtest)
 
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 LINK_DIRECTORIES(${lib_dir})
 
 ADD_EXECUTABLE(littleLearning ${SRC_LIST})

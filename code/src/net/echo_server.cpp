@@ -45,6 +45,7 @@ void echoServer(uint16_t port)
         do {
             len = read(fd, buff, sizeof(buff));
             write(fd, buff, len);
+            memset(buff, 0, sizeof(buff));
         } while(len > 0);
         close(fd);
     }
