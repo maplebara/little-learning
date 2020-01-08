@@ -1,13 +1,17 @@
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <string>
 
 #include "common.h"
+
+using std::string;
 
 const int backLog = 5;
 
@@ -64,15 +68,29 @@ void ttcpServer(uint16_t port)
         PayLoad* message = (PayLoad*)malloc(msgLen);
         assert(message != nullptr);
 
-        for(int i = 0; i < sm.number; ++i)
-        {
-            ssize_t rLen = read(fd, message, msgLen);
-            assert(rLen == msgLen);
+        timeval start, end;
+        gettimeofday(&start, nullptr);
 
-            uint32_t ack = htonl(message->length);
-            ssize_t wLen = write(fd, &ack, sizeof(uint32_t));
-            assert(wLen == sizeof(uint32_t));
+        for(uint32_t i = 0; i < sm.number; ++i)
+        {
+            int status = readAll(fd, message, msgLen);
+            assert(status == 0);
+
+            uint32_t dataLen = ntohl(message->length);
+            assert(dataLen == sm.length);
+
+            uint32_t ack = message->length;
+            int wlen = write(fd, &ack, sizeof(uint32_t));
+            assert(wlen == sizeof(uint32_t));
         }
+        gettimeofday(&end, nullptr);
+        double st = start.tv_sec * 1000 * 1000 + start.tv_usec;
+        double en = end.tv_sec * 1000 * 1000 + end.tv_usec;
+        double eslaped = (en - st) / 1000000.0;
+
+        double totalData = msgLen * sm.number / (1024.0 * 1024.0);
+        double rate = totalData / eslaped;
+        printf("rate: %.3f M/s\n", rate);
         free(message);
         close(fd);
     }

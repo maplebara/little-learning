@@ -28,9 +28,14 @@ void ttcpClient(const char* hostName, uint16_t port, uint32_t msgLen, uint32_t m
     int status = connect(sockfd, (sockaddr*)&serverAddr, sizeof(sockaddr_in));
     assert(status == 0);
 
+    printf("The tcp connection is established!\n");
+
     SessionMessage sm;
     sm.length = htonl(msgLen);
     sm.number = htonl(msgNum);
+
+    int sessionLen = write(sockfd, &sm, sizeof(sm));
+    assert(sessionLen == sizeof(sm));
 
     uint32_t len = sizeof(PayLoad) + msgLen;
     PayLoad* message = (PayLoad*)malloc(len);
@@ -43,11 +48,12 @@ void ttcpClient(const char* hostName, uint16_t port, uint32_t msgLen, uint32_t m
 
     for(int i = 0; i < msgNum; ++i)
     {
-        ssize_t wlen = write(sockfd, message, len);
-        assert(wlen == len);
+        int status = writeAll(sockfd, message, len);
+        assert(status == 0);
 
         uint32_t ack = 0;
         ssize_t rLen = read(sockfd, &ack, sizeof(uint32_t));
+        assert(message->length == ack);
         assert(rLen == sizeof(uint32_t));
     }
 
