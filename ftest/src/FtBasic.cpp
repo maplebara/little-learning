@@ -1,7 +1,9 @@
 #include "gtest/gtest.h"
 #include "net/common.h"
 #include <boost/lexical_cast.hpp>
+#include <string>
 
+using std::string;
 
 class FtBasic : public ::testing::Test {
 protected:
@@ -29,3 +31,13 @@ TEST_F(FtBasic, boost_cast_test)
     ASSERT_EQ(a, 123);
     ASSERT_EQ(b, 123.12);
 }
+
+// TEST_F(FtBasic, std_string_test)
+// {
+//     string str("world");
+//     string postfix = str.substr(4);
+//     printf("%s\n", postfix.c_str());
+//     printf("%s\n", str.c_str());
+// }
+
+

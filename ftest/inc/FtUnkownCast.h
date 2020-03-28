@@ -1,3 +1,5 @@
+#pragma once
+
 #include "UnkownCast.h"
 #include <iostream>
 #include <memory>
