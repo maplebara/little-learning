@@ -2,8 +2,10 @@
 #include "concurrent/Thread.h"
 #include "FtConcurrentAction.h"
 #include "concurrent/SpinLock.h"
+#include "concurrent/ThreadLocal.h"
 
 using namespace usi;
+ThreadLocal<int> td;
 
 class FtConcurrency : public ::testing::Test
                     , public FtConcurrentAction {

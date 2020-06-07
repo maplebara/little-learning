@@ -9,6 +9,16 @@
             } \
         } while(0)
 
+#define USI_ASSERT_SUCC_CALL(expr) \
+        do {  \
+            __typeof__(expr) status = (expr); \
+            if(status)  \
+            {          \
+                printf("The expr (%s)[%d] is failed, status[%d]!!\n", __FILE__, __LINE__, status); \
+                return -1;   \
+            } \
+        } while(0)
+
 
 
 //////////////////////////

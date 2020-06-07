@@ -32,12 +32,19 @@ TEST_F(FtBasic, boost_cast_test)
     ASSERT_EQ(b, 123.12);
 }
 
-// TEST_F(FtBasic, std_string_test)
-// {
-//     string str("world");
-//     string postfix = str.substr(4);
-//     printf("%s\n", postfix.c_str());
-//     printf("%s\n", str.c_str());
-// }
+struct A
+{
+    static int a;
+    const int c = 0;
+    int b;
+};
+
+int A::a = 9;
+
+TEST_F(FtBasic, std_string_test)
+{
+    A a;
+    printf("size=%u\n", sizeof(A));
+}
 
 
