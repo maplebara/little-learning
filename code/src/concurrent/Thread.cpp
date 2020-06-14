@@ -2,12 +2,27 @@
 #include <system_error>
 #include <cerrno>
 #include "basic/util.h"
+#include <thread>
 
 USI_NS_BEGIN
 
 namespace {
     thread_local Thread* self_thread = nullptr;
 
+}
+
+pid_t GetThreadId()
+{
+    if(!self_thread)
+    {
+        return self_thread->getTid();
+    }
+    return -1;
+}
+
+Thread* Thread::GetThis()
+{
+    return self_thread;
 }
 
 Thread::Thread(std::function<void()> exec) : exec(exec)
@@ -55,7 +70,6 @@ void* Thread::run(void* args)
 {
     Thread* thread = (Thread*)args;
     self_thread = thread;
-
     thread->tid = GetTid();
 
     sem_post(&(thread->semaphore));

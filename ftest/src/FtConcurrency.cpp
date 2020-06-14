@@ -5,7 +5,18 @@
 #include "concurrent/ThreadLocal.h"
 
 using namespace usi;
-ThreadLocal<int> td;
+ThreadLocal<int> tsd;
+
+namespace {
+
+void func1(void* num)
+{
+    int* a = (int*)num;
+    int& temp = tsd.get();
+    temp = *a;
+}
+
+}
 
 class FtConcurrency : public ::testing::Test
                     , public FtConcurrentAction {
@@ -46,6 +57,17 @@ TEST_F(FtConcurrency, Cas_lock_Test)
         threads[i].join();
     }
     ASSERT_EQ(num, 100 * 1000);
+}
+
+TEST_F(FtConcurrency, thread_local_data_)
+{
+    int a = 10;
+    int b = 20;
+    ThreadLocal<int> tsd;
+    Thread thread1(func1, &a);
+    Thread thread2(func1, &b);
+    thread1.join();
+    thread2.join();
 }
 
 

@@ -44,7 +44,7 @@ int A::a = 9;
 TEST_F(FtBasic, std_string_test)
 {
     A a;
-    printf("size=%u\n", sizeof(A));
+    printf("size=%lu\n", sizeof(A));
 }
 
 

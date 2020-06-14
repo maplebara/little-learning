@@ -9,6 +9,8 @@
 
 USI_NS_BEGIN
 
+pid_t GetThreadId();
+
 struct Thread : UnCopyable
 {
     Thread(std::function<void()> exec);
@@ -24,6 +26,8 @@ struct Thread : UnCopyable
 
     pthread_t getThreadId() const { return threadId; }
     pid_t  getTid() const { return tid; } 
+
+    static Thread* GetThis();
 
 private:
     static void* run(void*);

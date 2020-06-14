@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include "basic/BasicMacro.h"
 
+USI_NS_BEGIN
+
 template<typename T>
 struct ThreadLocal
 {
@@ -22,7 +24,7 @@ struct ThreadLocal
         if(!temp)
         {
             temp = new T();
-            USI_ASSERT_SUCC_CALL(pthread_setspecific(value, temp));
+            pthread_setspecific(value, temp);
         }
         return *temp;
     }
@@ -41,4 +43,5 @@ private:
     pthread_key_t value;
 };
 
+USI_NS_END
 
