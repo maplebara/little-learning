@@ -15,6 +15,7 @@ include_directories(
 ${code_dir}/inc
 ${3rd_dir}/gtest/inc/
 ${ft_dir}/inc
+${current_dir}/leveldb/util/inc
 )
 
 FILE(GLOB_RECURSE  SRC_LIST
@@ -32,11 +33,10 @@ endif()
 find_package(leveldb REQUIRED)
 if(leveldb_FOUND)
     include_directories(${leveldb_INCLUDE_DIRS})
-    message('leveldb found')
 endif()
 
 LINK_DIRECTORIES(${lib_dir})
 
 ADD_EXECUTABLE(littleLearning ${SRC_LIST})
 
-TARGET_LINK_LIBRARIES(littleLearning leveldb gtest pthread)
+TARGET_LINK_LIBRARIES(littleLearning hiredis leveldb gtest pthread)
