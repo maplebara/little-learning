@@ -49,7 +49,7 @@ Thread::Thread(std::function<void(void* args)> exec, void* args) : func(exec), a
     sem_wait(&semaphore);
 }
 
-Thread::Thread(Thread&& other)
+Thread::Thread(Thread&& other) noexcept
 {
     std::swap(tid, other.tid);
     std::swap(threadId, other.threadId);

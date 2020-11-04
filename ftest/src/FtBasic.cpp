@@ -2,6 +2,7 @@
 #include "net/common.h"
 #include <boost/lexical_cast.hpp>
 #include <string>
+#include "basic/util.h"
 
 using std::string;
 
@@ -46,5 +47,22 @@ TEST_F(FtBasic, std_string_test)
     A a;
     printf("size=%lu\n", sizeof(A));
 }
+
+TEST_F(FtBasic, s_memcpy_test)
+{
+    char src[] = "abc";
+    char dst[100];
+    char s_dst[100];
+    memset(dst, 0x00, 100);
+    memset(s_dst, 0x00, 100);
+    memcpy(dst, src, sizeof src);
+    s_memcpy(s_dst, src, sizeof src);
+    string s_str(dst, sizeof src);
+    string ss_str(s_dst, sizeof src);
+    printf("s_str=%s\n", s_str.c_str());
+    printf("ss_str=%s\n", ss_str.c_str());
+    ASSERT_EQ(s_str, ss_str);
+}
+
 
 

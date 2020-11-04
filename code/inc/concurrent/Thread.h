@@ -16,7 +16,7 @@ struct Thread : UnCopyable
     Thread(std::function<void()> exec);
     Thread(std::function<void(void* args)>, void* args);
 
-    Thread(Thread&& other);
+    Thread(Thread&& other) noexcept;
     ~Thread();
 
     void join();
@@ -37,7 +37,6 @@ private:
     pthread_t threadId{0};    //由posix线程库维护的线程ID，不同进程中线程ID可能重复
     pthread_attr_t attr;
     sem_t semaphore;
-
     std::function<void()> exec;
     std::function<void(void*)> func;
     void* args{nullptr};

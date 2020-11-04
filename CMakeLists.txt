@@ -29,8 +29,14 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
+find_package(leveldb REQUIRED)
+if(leveldb_FOUND)
+    include_directories(${leveldb_INCLUDE_DIRS})
+    message('leveldb found')
+endif()
+
 LINK_DIRECTORIES(${lib_dir})
 
 ADD_EXECUTABLE(littleLearning ${SRC_LIST})
 
-TARGET_LINK_LIBRARIES(littleLearning gtest pthread)
+TARGET_LINK_LIBRARIES(littleLearning leveldb gtest pthread)

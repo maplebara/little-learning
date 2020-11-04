@@ -3,6 +3,8 @@
 #include "FtConcurrentAction.h"
 #include "concurrent/SpinLock.h"
 #include "concurrent/ThreadLocal.h"
+#include "concurrent/BlockingQueue.h"
+#include <thread>
 
 using namespace usi;
 ThreadLocal<int> tsd;
@@ -68,6 +70,31 @@ TEST_F(FtConcurrency, thread_local_data_)
     Thread thread2(func1, &b);
     thread1.join();
     thread2.join();
+}
+
+TEST_F(FtConcurrency, DISABLED_blockingQueue_test)
+{
+    BlockingQueue bq(10);
+    int a = 10, b = 33;
+    auto cf = [&bq](int val) { 
+        for(int i = 0; i < 10; ++i) {
+            bq.put(val + i);
+        }    
+    };
+    auto pf = [&bq]() { 
+        while(true) {
+            printf("tid[%x] consumer elem %d\n", std::this_thread::get_id(), bq.pop());
+        }
+     };
+    std::thread producer1(cf, a);
+    std::thread producer2(cf, b);
+    std::thread consumer1(pf);
+    std::thread consumer2(pf);
+
+    producer1.join();
+    producer2.join();
+    consumer1.join();
+    consumer2.join();
 }
 
 
