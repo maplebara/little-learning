@@ -83,7 +83,7 @@ TEST_F(FtConcurrency, DISABLED_blockingQueue_test)
     };
     auto pf = [&bq]() { 
         while(true) {
-            printf("tid[%x] consumer elem %d\n", std::this_thread::get_id(), bq.pop());
+            printf("tid[%u] consumer elem %d\n", std::this_thread::get_id(), bq.pop());
         }
      };
     std::thread producer1(cf, a);

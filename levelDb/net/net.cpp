@@ -4,6 +4,7 @@
 #include <cstring>
 #include <unistd.h>
 #include "ProducerConsumerQueue.h"
+#include "TaskQueue.h"
 
 const int backLog = 20;
 const uint16_t listenPort = 12356;
@@ -31,15 +32,16 @@ int acceptSock(uint16_t port)
 
 void readEventHandler(evutil_socket_t fd, short event_type, void* arg)
 {
-    char buf[1024] = {0};
+    char* buf = new char[MAX_BUF];
     ssize_t len = ::read(fd, buf, sizeof buf);
     if(len < 0) {
+        delete [] buf;
         close(fd);
         perror("read ocurr error!!");
         return ;
     }
-    static ProducerConsumerQueue<Task> taskQueue(1024);
-    taskQueue.write();
+    printf("%s\n", buf);
+    TaskQueues::getInstance().write(buf, len);
 }
 
 void listenEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
@@ -48,7 +50,7 @@ void listenEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
     socklen_t cliLen = sizeof(sockaddr_in);
     int fd = ::accept(sockfd, (sockaddr*)&cliAddr, &cliLen);
     auto* ev = static_cast<AeEvent*>(aeEvent);
-    auto* levent = event_new(ev->evBase, fd, EV_READ|EV_PERSIST, readEventHandler, (void*)evBase);
+    auto* levent = event_new(ev->evBase, fd, EV_READ|EV_PERSIST, readEventHandler, nullptr);
     event_add(levent, NULL);
 }
 
@@ -65,7 +67,7 @@ void eventLoop()
 
     auto* listen_event = event_new(evBase, sockfd, EV_READ|EV_PERSIST, listenEventHandler, (void*)&aeEvent);
     event_add(listen_event, NULL);
-    event_base_loop(evBase, EVLOOP_NONBLOCK);   
+    event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY);   
 }
 
 

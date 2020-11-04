@@ -21,9 +21,6 @@ private:
         pInstance = new T();
     }
 
-    Singleton() = delete;
-    ~Singleton() = delete;
-
 private:
     static T* pInstance;
     static pthread_once_t pOnce;

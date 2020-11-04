@@ -11,16 +11,19 @@ project(littleLearning)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -ggdb -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb -std=c11")
 
-include_directories(
+include_directories( 
 ${code_dir}/inc
 ${3rd_dir}/gtest/inc/
 ${ft_dir}/inc
-${current_dir}/leveldb/util/inc
+${current_dir}/levelDb/util/inc
+${current_dir}/levelDb/repo/inc
+${current_dir}/levelDb/net
 )
 
 FILE(GLOB_RECURSE  SRC_LIST
     "${ft_dir}/src/*.cpp"
     "${code_dir}/src/*"
+    "${current_dir}/levelDb/*"
 )
 
 add_subdirectory(${3rd_dir}/gtest)
@@ -39,4 +42,4 @@ LINK_DIRECTORIES(${lib_dir})
 
 ADD_EXECUTABLE(littleLearning ${SRC_LIST})
 
-TARGET_LINK_LIBRARIES(littleLearning hiredis leveldb gtest pthread)
+TARGET_LINK_LIBRARIES(littleLearning hiredis leveldb gtest event pthread)
