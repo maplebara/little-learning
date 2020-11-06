@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include "ProducerConsumerQueue.h"
 #include "TaskQueue.h"
+#include <thread>
+#include "db/DbUpdater.h"
 
 const int backLog = 20;
 const uint16_t listenPort = 12356;
@@ -41,16 +43,17 @@ void readEventHandler(evutil_socket_t fd, short event_type, void* arg)
         return ;
     }
     printf("%s\n", buf);
-    TaskQueues::getInstance().write(buf, len);
+    TaskQueues::getInstance().write(buf, len, (event_base*)arg);
 }
 
 void listenEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
 {
+    printf("listenEventHandler\n");
     sockaddr_in cliAddr;
     socklen_t cliLen = sizeof(sockaddr_in);
     int fd = ::accept(sockfd, (sockaddr*)&cliAddr, &cliLen);
     auto* ev = static_cast<AeEvent*>(aeEvent);
-    auto* levent = event_new(ev->evBase, fd, EV_READ|EV_PERSIST, readEventHandler, nullptr);
+    auto* levent = event_new(ev->evBase, fd, EV_READ|EV_PERSIST, readEventHandler, ev->evBase);
     event_add(levent, NULL);
 }
 
@@ -66,7 +69,10 @@ void eventLoop()
     aeEvent.evBase = evBase;
 
     auto* listen_event = event_new(evBase, sockfd, EV_READ|EV_PERSIST, listenEventHandler, (void*)&aeEvent);
-    event_add(listen_event, NULL);
+    int stat = event_add(listen_event, NULL);
+    if(stat) printf("stat[%d]\n", stat);
+
+    std::thread clientReqHandler(dataUpdate_Entry);
     event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY);   
 }
 
