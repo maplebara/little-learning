@@ -4,14 +4,6 @@
 
 using leveldb::Slice;
 
-enum OpType {
-    kAdd,
-    kUpdate,
-    kDel,
-    kBatch
-};
-
-
 struct DbEvent
 {
     Slice cmd;

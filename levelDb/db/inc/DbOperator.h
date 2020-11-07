@@ -11,15 +11,14 @@ using leveldb::Status;
 
 struct DbOperator
 {
-    DbSetter(DB* db, event_base* evBase) : db(db)，evBase(evBase)  {}
+    DbSetter(DB* db, event_base* evBase, int fd) : db(db)，evBase(evBase), clientFd(fd)  {}
 
-    Status handleEvent(const DbEvent& event);
-    Status set(Slice key, Slice value);
-    Status get(Slice key);
+    void handleEvent(const DbEvent& event);
 
 private:
     DB* db;
     event_base* evBase;
+    int clientFd;
 };
 
 

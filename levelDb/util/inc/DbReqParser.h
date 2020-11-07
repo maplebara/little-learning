@@ -15,11 +15,9 @@ struct CmdStr
 
 struct DbReqParser
 {
-    DbReqParser(const char* data) : data(data) {}
+    DbReqParser(Slice msg) : msg(msg) {}
 
-    Slice key();
-    Slice value();
-    OpType ops();
+    DbEvent getEvent();
 
 private:
     int parse();
@@ -27,7 +25,7 @@ private:
     int parseArray();
 
 private:
-    const char* data;
+    Slice msg;
     std::vector<CmdStr> cmds;
 };
 

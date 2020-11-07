@@ -1,6 +1,9 @@
 #pragma once
 
 #include <event2/event.h>
+#include "leveldb/slice.h"
+
+using leveldb::Slice;
 
 void eventLoop();
 
@@ -13,13 +16,14 @@ struct AeEvent
 //not thread-safe
 struct Task
 {
-    Task() : data(nullptr), len(0), evBase(nullptr), refs(nullptr) {}
-    Task(char* data, uint32_t len, event_base* evBase) : data(data), len(len)
+    Task() : data(nullptr), len(0), clientFd(-1), evBase(nullptr), refs(nullptr) {}
+    Task(char* data, uint32_t len, int fd, event_base* evBase) : data(data), len(len), clientFd(fd)
                                     , evBase(evBase), refs(new uint32_t(1)) {}
 
     Task(const Task& rhs) {
         this->data = rhs.data;
         this->len = rhs.len;
+        this->clientFd = rhs.clientFd;
         this->evBase = rhs.evBase;
         ++(*rhs.refs);
         this->refs = rhs.refs;
@@ -34,6 +38,7 @@ struct Task
         }
         this->data = rhs.data;
         this->len = rhs.len;
+        this->clientFd = rhs.clientFd;
         this->evBase = rhs.evBase;
         ++(*rhs.refs);
         this->refs = rhs.refs;
@@ -48,17 +53,22 @@ struct Task
         }
     }
 
-    const char* getMsg() const {
-        return data;
+    Slice getMsg() const {
+        return Slice(data, len);
     }
 
     event_base* getEventBase() {
         return evBase;
     }
 
+    int fd() const {
+        return clientFd;
+    }
+
 private:
     char* data;
     uint32_t len;
+    int clientFd;
     event_base* evBase;
     uint32_t* refs;
 };

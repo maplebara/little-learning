@@ -43,12 +43,11 @@ void readEventHandler(evutil_socket_t fd, short event_type, void* arg)
         return ;
     }
     printf("%s\n", buf);
-    TaskQueues::getInstance().write(buf, len, (event_base*)arg);
+    TaskQueues::getInstance().write(buf, len, fd, (event_base*)arg);
 }
 
 void listenEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
 {
-    printf("listenEventHandler\n");
     sockaddr_in cliAddr;
     socklen_t cliLen = sizeof(sockaddr_in);
     int fd = ::accept(sockfd, (sockaddr*)&cliAddr, &cliLen);

@@ -11,7 +11,7 @@ void handleTask(const Task& task)
     leveldb::Options options;
     options.create_if_missing = true;
     leveldb::Status status = leveldb::DB::Open(options, "/tmp/testdb", &db);
-    DbOperator dbInst(db, task.getEventBase());
+    DbOperator dbInst(db, task.getEventBase(), task.fd());
     dbInst.handleEvent(reqParser.getEvent());
 }
 
