@@ -6,9 +6,7 @@ using leveldb::Slice;
 
 struct DbEvent
 {
-    Slice cmd;
-    Slice key;
-    Slice value;
+    Slice cmd[3];
 };
 
 

@@ -6,10 +6,10 @@
 #include "ProducerConsumerQueue.h"
 #include "TaskQueue.h"
 #include <thread>
-#include "db/DbUpdater.h"
+#include "DbUpdater.h"
 
 const int backLog = 20;
-const uint16_t listenPort = 12356;
+const uint16_t listenPort = 12357;
 
 int acceptSock(uint16_t port)
 {
@@ -34,6 +34,7 @@ int acceptSock(uint16_t port)
 
 void readEventHandler(evutil_socket_t fd, short event_type, void* arg)
 {
+    printf("the connection fd is %d\n", fd);
     char* buf = new char[MAX_BUF];
     ssize_t len = ::read(fd, buf, sizeof buf);
     if(len < 0) {
@@ -42,8 +43,15 @@ void readEventHandler(evutil_socket_t fd, short event_type, void* arg)
         perror("read ocurr error!!");
         return ;
     }
-    printf("%s\n", buf);
-    TaskQueues::getInstance().write(buf, len, fd, (event_base*)arg);
+    printf("%s, %zd\n", buf, len);
+    const char* eStr = "exit";
+    if(memcmp(buf, eStr, strlen(eStr)) == 0) {
+        auto* ev = static_cast<AeEvent*>(arg);
+        event_del(ev->content);
+        event_free(ev->content);
+        close(fd);
+    }
+    TaskQueues::getInstance().write(Task(buf, len, fd, (event_base*)arg));
 }
 
 void listenEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
@@ -52,7 +60,8 @@ void listenEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
     socklen_t cliLen = sizeof(sockaddr_in);
     int fd = ::accept(sockfd, (sockaddr*)&cliAddr, &cliLen);
     auto* ev = static_cast<AeEvent*>(aeEvent);
-    auto* levent = event_new(ev->evBase, fd, EV_READ|EV_PERSIST, readEventHandler, ev->evBase);
+    auto* levent = event_new(ev->evBase, fd, EV_READ|EV_PERSIST, readEventHandler, ev);
+    ev->content = levent;
     event_add(levent, NULL);
 }
 

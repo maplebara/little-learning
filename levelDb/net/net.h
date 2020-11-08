@@ -10,6 +10,7 @@ void eventLoop();
 struct AeEvent
 {
     event_base* evBase;
+    event* content;
 };  
 
 
@@ -57,7 +58,7 @@ struct Task
         return Slice(data, len);
     }
 
-    event_base* getEventBase() {
+    event_base* getEventBase() const {
         return evBase;
     }
 

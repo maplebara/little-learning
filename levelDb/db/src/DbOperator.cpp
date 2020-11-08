@@ -1,35 +1,38 @@
 #include "DbOperator.h"
 #include <unistd.h>
 #include <string.h>
-#include "comm_strcut.h"
 #include "DbStatus.h"
+#include <functional>
+#include <unordered_map>
+#include <string>
 
 namespace {
     DbResponse DB_SUCC_RSP;
     DbResponse DB_FAIL_RSP(Status::Corruption("Normal Error!"));
 }
 
-DbResponse* db_set(const DbEvent& event, DB* db)
+AbstractDbResponse* db_set(const DbEvent& event, DB* db)
 {
-    auto res = db->Put(leveldb::WriteOptions(), event.key, event.value);
+    printf("set key[%s], value[%s]\n", event.cmd[1].ToString().c_str(), event.cmd[2].ToString().c_str());
+    auto res = db->Put(leveldb::WriteOptions(), event.cmd[1], event.cmd[2]);
     return res.ok() ? &DB_SUCC_RSP : &DB_FAIL_RSP;
 }
 
-DbResponse* db_get(const DbEvent& event, DB* db)
+AbstractDbResponse* db_get(const DbEvent& event, DB* db)
 {
     GetDbResponse* response = new GetDbResponse();
-    auto res = db->Get(leveldb::ReadOptions(), event.key, response->getRsp());
+    auto res = db->Get(leveldb::ReadOptions(), event.cmd[1], response->getRsp());
     response->set(res);
     return response;
 }
 
-DbResponse* db_del(const DbEvent& event, DB* db)
+AbstractDbResponse* db_del(const DbEvent& event, DB* db)
 {
-    auto res = db->Delete(leveldb::WriteOptions(), event.key);
+    auto res = db->Delete(leveldb::WriteOptions(), event.cmd[1]);
     return res.ok() ? &DB_SUCC_RSP : &DB_FAIL_RSP;
 }
 
-void handleRsp(evutil_socket_t fd, short event_type, void* rsp);
+void handleRsp(evutil_socket_t fd, short event_type, void* rsp)
 {
     if(!rsp) {
         fprintf(stderr, "No db response!\n");
@@ -40,13 +43,15 @@ void handleRsp(evutil_socket_t fd, short event_type, void* rsp);
     if(st < 0) {
         printf("handleRsp fail!\n");
     }
-    response->destroy();
+    if(dbResponse->id() == kGetDbResponse) {
+        delete dbResponse;
+    }
 }
 
 namespace {
     using Func = std::function<AbstractDbResponse* (const DbEvent& event, DB* db)>;
 
-    std::unordered_map<string, Func> funcs = {
+    std::unordered_map<std::string, Func> funcs = {
         {"set", db_set},
         {"get", db_get},
         {"del", db_del}
@@ -56,12 +61,12 @@ namespace {
 
 void DbOperator::handleEvent(const DbEvent& event)
 {
-    auto& func = funcs.find(event.cmd);
+    auto func = funcs.find(event.cmd[0].ToString());
     if(func == funcs.end()) {
         printf("Not Found the command!");
         return ;
     }
-    auto* rsp = func(event, this->db);
+    auto* rsp = func->second(event, this->db);
     auto* levent = event_new(this->evBase, this->clientFd, EV_WRITE, handleRsp, rsp);
     event_add(levent, NULL);
 }

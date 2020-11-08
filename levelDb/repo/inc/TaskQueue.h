@@ -4,6 +4,7 @@
 #include "concurrent/Singleton.h"
 #include <mutex>
 #include <condition_variable>
+#include <utility>
 
 constexpr uint32_t MAX_BUF = 1024 * 1024;
 
@@ -12,11 +13,10 @@ struct TaskQueue : usi::Singleton<TaskQueue<MAX_BUF>>
 {
     TaskQueue() : pq(MAX_BUF) {}
 
-    template <class... Args>
-    void write(Args&&... recordArgs) {
-        if(!pq.write(std::forward<Args>(recordArgs)...)) {
+    void write(const Task& task) {
+        if(!pq.write(task)) {
             std::unique_lock<std::mutex> lk(mt);
-            not_empty.wait(lk, [this]{return pq.write(std::forward<Args>(recordArgs)...);});
+            not_empty.wait(lk, [task, this]{return pq.write(task); });
             not_full.notify_all();
         }
     }
@@ -24,7 +24,7 @@ struct TaskQueue : usi::Singleton<TaskQueue<MAX_BUF>>
     void read(Task& record) {
         if(!pq.read(record)) {
             std::unique_lock<std::mutex> lk(mt);
-            not_full.wait(lk, [this]{return pq.read(record);});
+            not_full.wait(lk, [&record, this]{return pq.read(record);});
             not_empty.notify_all();
         }
     }

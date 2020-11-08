@@ -18,6 +18,7 @@ ${ft_dir}/inc
 ${current_dir}/levelDb/util/inc
 ${current_dir}/levelDb/repo/inc
 ${current_dir}/levelDb/net
+${current_dir}/levelDb/db/inc
 )
 
 FILE(GLOB_RECURSE  SRC_LIST

@@ -1,32 +1,24 @@
 #pragma once
 
 #include "leveldb/slice.h"
-#include "comm_strcut.h"
+#include "comm_struct.h"
 #include <vector>
 
 using leveldb::Slice;
-
-struct CmdStr
-{
-    OpType op;
-    Slice key;
-    Slice value;
-};
 
 struct DbReqParser
 {
     DbReqParser(Slice msg) : msg(msg) {}
 
-    DbEvent getEvent();
+    int parse(DbEvent& event);
 
 private:
-    int parse();
-    int parseString();
-    int parseArray();
+    int parseSimpleStr(int st, Slice& str);
+    int parseBlkStr(int st, Slice& str);
+    int parseArray(int st, DbEvent& event);
 
 private:
     Slice msg;
-    std::vector<CmdStr> cmds;
 };
 
 

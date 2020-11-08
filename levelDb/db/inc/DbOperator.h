@@ -11,7 +11,7 @@ using leveldb::Status;
 
 struct DbOperator
 {
-    DbSetter(DB* db, event_base* evBase, int fd) : db(db)，evBase(evBase), clientFd(fd)  {}
+    DbOperator(DB* db, event_base* evBase, int fd) : db(db), evBase(evBase), clientFd(fd)  {}
 
     void handleEvent(const DbEvent& event);
 

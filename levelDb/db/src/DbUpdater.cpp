@@ -6,13 +6,16 @@
 
 void handleTask(const Task& task)
 {
-    DbReqParser reqParser(task.getMsg());
     leveldb::DB* db;
     leveldb::Options options;
     options.create_if_missing = true;
     leveldb::Status status = leveldb::DB::Open(options, "/tmp/testdb", &db);
+
+    DbEvent event;
+    DbReqParser reqParser(task.getMsg());
+    reqParser.parse(event);
     DbOperator dbInst(db, task.getEventBase(), task.fd());
-    dbInst.handleEvent(reqParser.getEvent());
+    dbInst.handleEvent(event);
 }
 
 void dataUpdate_Entry()

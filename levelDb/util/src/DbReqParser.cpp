@@ -6,10 +6,6 @@
 using std::string;
 using std::vector;
 
-namespace {
-    std::unordered_map<std::string, OpType> = { {"open", kAdd}, {"set", kDel}, {"get", kUpdate} };
-}
-
 int splite(vector<Slice>& strVec, Slice str)
 {
     int i = 0, j;
@@ -23,28 +19,63 @@ int splite(vector<Slice>& strVec, Slice str)
     return 0;
 }
 
-int DbReqParser::parse(int st, DbEvent& event, const vector<Slice>& strVec)
+int DbReqParser::parse(DbEvent& event)
 {
-    if(strVec[st][0] == '*') {
-        int cnt = 0;
-        for(int i = 1; i < strVec[st].size(); ++i)
-            cnt = 10 * cnt + strVec[st][i] - '0';
-        if(strVec[st + 1][0] == '$') {
-            int strLen = 0;
-            for(int i = 1; i < strVec[st].size(); ++i)
-                strLen = 10 * strLen + strVec[st + 1][i] - '0';    
-                   
-        }
-    }
+    return parseArray(0, event);
 }
 
-DbEvent DbReqParser::getEvent()
+int DbReqParser::parseSimpleStr(int st, Slice& str)
 {
-    vector<Slice> strVec;
-    int st = splite(strVec, msg);
-    DbEvent event;
-    parse(0, event, strVec);
-    return event;
+    if(st >= msg.size() || msg[st] != '+') return -1;
+    ++st;
+    int j = st;
+    while(j < msg.size() && msg[j] != '\r') ++j;
+    if(j == msg.size()) return -1;
+    str = Slice(msg.data() + st, j - st);
+    return j + 2;
+}
+
+int DbReqParser::parseBlkStr(int st, Slice& str)
+{
+    if(st >= msg.size() || msg[st] != '$') return -1;
+    ++st;
+    int j = st, len = 0;
+    while(j < msg.size() && msg[j] != '\r') 
+    {
+        len = 10 * len + msg[j] - '0';
+        ++j;
+    }
+    st += 2;
+    if(st + len >= msg.size()) return -1;
+    str = Slice(msg.data() + st, len);
+    return st + len + 2;
+}
+
+int DbReqParser::parseArray(int st, DbEvent& event)
+{
+    if(st >= msg.size() || msg[st] != '*') return -1;
+    int j = st, cnt = 0;
+    while(j < msg.size() && msg[j] != '\r') 
+    {
+        cnt = 10 * cnt + msg[j] - '0';
+        ++j;
+    }
+    st += 2;
+    int i = 0;
+    if(cnt > 3) return -1;
+    while(cnt--) {
+        if(st >= msg.size()) return -1;
+        if(msg[st] == '+') {
+            st = parseSimpleStr(st, event.cmd[i++]);
+            if(st < 0) return -1;
+        }
+        else if(msg[st] == '$')
+        {
+            st = parseBlkStr(st, event.cmd[i++]);
+            if(st < 0) return -1;
+        }
+    }
+    return st;
 }
 
 

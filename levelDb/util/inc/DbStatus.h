@@ -6,17 +6,30 @@
 
 using leveldb::Status;
 
+enum ReponseType { 
+    kDbResponse, 
+    kGetDbResponse
+};
+
 struct AbstractDbResponse
 {
+    AbstractDbResponse(ReponseType id) : type(id) {}
+
     virtual ~AbstractDbResponse() {}
 
     virtual int response(int fd) = 0;
-    virtual void destroy() = 0;
+
+    ReponseType id() const {
+        return type;
+    } 
+
+protected:
+    ReponseType type;
 };
 
 struct DbResponse : AbstractDbResponse
 {
-    DbResponse(Status stat = Status()) : stat(stat) {}
+    DbResponse(Status stat = Status()) : AbstractDbResponse(kDbResponse), stat(stat) {}
 
     virtual int response(int fd) override
     {
@@ -24,28 +37,20 @@ struct DbResponse : AbstractDbResponse
         return res;
     }
 
-    void destroy() override {}
-
 private:
     Status stat;
 };
 
 struct GetDbResponse : AbstractDbResponse
 {
+    GetDbResponse() : AbstractDbResponse(kGetDbResponse) {}
+
     virtual int response(int fd) override
     {
         int res = ::write(fd, rsp.c_str(), rsp.size());
         if(res < 0) return res;
         res = ::write(fd, stat.ToString().c_str(), stat.ToString().size());
         return res;
-    }
-
-    void destroy() override {
-        ~GetDbResponse();
-    }
-
-    ~GetDbResponse() {
-        delete this;
     }
 
     std::string* getRsp() {
