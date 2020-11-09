@@ -74,6 +74,8 @@ private:
     uint32_t* refs;
 };
 
+void acceptEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent);
+
 
 
 
