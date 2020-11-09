@@ -3,12 +3,14 @@
 #include <cassert>
 #include <cstring>
 #include <unistd.h>
+#include <thread>
 #include "ProducerConsumerQueue.h"
 #include "TaskQueue.h"
-#include <thread>
 #include "DbUpdater.h"
 #include "Socket.h"
 #include "DbServer.h"
+#include "comm_struct.h"
+#include <sys/eventfd.h>
 
 const uint16_t listenPort = 12357;
 const int QUERY_BUFF_LEN = 14 * 1024;
@@ -23,9 +25,16 @@ void processInput(evutil_socket_t fd, short event_type, void* arg)
         return ;
     }
     if(client->processQuery() == 0) {
-
+        Task task;
+        task.fd = fd;
+        client->forwardTask(task.cmd);
+        TaskQueues::getInstance().write(std::move(task));
     }
-  //  TaskQueues::getInstance().write(Task(buf, len, fd, ev->evBase));
+}
+
+void reply(evutil_socket_t fd, short event_type, void* arg)
+{
+
 }
 
 void acceptEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
@@ -45,9 +54,32 @@ void acceptEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
     event_add(levent, NULL);
 }
 
-void eventEntry()
+void eventLoop()
 {
-    server.eventLoop(); 
+    int sockfd = listenSocket(listenPort);
+    auto* evBase = event_base_new();
+    if(!evBase) {
+        printf("create event base failed!!\n");
+        exit(1);
+    }
+    AeEvent aeEvent;
+    aeEvent.evBase = evBase;
+
+    auto* listenEvent = event_new(evBase, sockfd, EV_READ|EV_PERSIST, acceptEventHandler, (void*)&aeEvent);
+    if(event_add(listenEvent, NULL) != 0) {
+        exit(1);
+    }
+
+    int ev_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
+    if(ev_fd < 0) {
+        perror("Create eventfd fail");
+    }
+    auto* notifyEvent = event_new(evBase, ev_fd, EV_READ|EV_PERSIST, reply, NULL);
+    if(event_add(notifyEvent, NULL) != 0) {
+        exit(1);
+    }
+    std::thread clientReqHandler(dataUpdate_Entry, ev_fd);
+    event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY); 
 }
 
 

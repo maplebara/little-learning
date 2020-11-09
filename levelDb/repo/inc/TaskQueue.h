@@ -5,6 +5,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <utility>
+#include "comm_struct.h"
 
 constexpr uint32_t MAX_BUF = 1024 * 1024;
 
@@ -13,7 +14,7 @@ struct TaskQueue : usi::Singleton<TaskQueue<MAX_BUF>>
 {
     TaskQueue() : pq(MAX_BUF) {}
 
-    void write(const Task& task) {
+    void write(Task&& task) {
         if(!pq.write(task)) {
             std::unique_lock<std::mutex> lk(mt);
             not_empty.wait(lk, [task, this]{return pq.write(task); });

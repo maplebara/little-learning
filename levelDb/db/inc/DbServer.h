@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
-// #include <event2/event.h>
 
 using std::unordered_map;
 using std::string;
@@ -14,10 +13,17 @@ const int QUERY_BUFF_LEN = 14 * 1024;
 struct Client
 {
     Client() : Client(-1) {}
-    Client(int fd) : fd(fd), qryType(0), qry_pos(0), queryBuff(QUERY_BUFF_LEN)
-                    , multiBulkCnt(0), bulkLen(-1), paraNum(0) {}
+    Client(int fd) : fd(fd), qryType(0), qry_pos(0), multiBulkCnt(0), bulkLen(-1) {}
 
     int processQuery();
+    
+    void forwardTask(vector<string>& rhs) {
+        std::swap(rhs, paras);
+    }
+
+private:
+    int parseQuery();
+    int parseBulkQuery();
 
 private:
     int fd;
@@ -26,19 +32,17 @@ private:
     string queryBuff;
     int multiBulkCnt;
     int bulkLen;
-    int paraNum;
     vector<string> paras;
+    volatile string output;
 };
 
 struct DbServer
 {
     void addClientIfNotExited(int fd) {
         if(!clients.count(fd)) {
-            clients[fd] = Client(fd);
+            clients.emplace(fd, Client(fd));
         }
     }
-
-    void eventLoop();
 
     Client* getClient(int fd) {
         if(clients.count(fd)) {

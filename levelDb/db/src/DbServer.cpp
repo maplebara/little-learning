@@ -3,27 +3,6 @@
 #include <event2/event.h>
 #include <string>
 
-const uint16_t listenPort = 12357;
-
-void DbServer::eventLoop()
-{
-    int sockfd = listenSocket(listenPort);
-    auto* evBase = event_base_new();
-    if(!evBase) {
-        printf("create event base failed!!\n");
-        return ;
-    }
-    AeEvent aeEvent;
-    aeEvent.evBase = evBase;
-
-    auto* listenEvent = event_new(evBase, sockfd, EV_READ|EV_PERSIST, acceptEventHandler, (void*)&aeEvent);
-    int stat = event_add(listenEvent, NULL);
-    if(stat) printf("stat[%d]\n", stat);
-
-    std::thread clientReqHandler(dataUpdate_Entry);
-    event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY); 
-}
-
 int Client::processQuery()
 {
     int originLen = queryBuff.size();
@@ -58,6 +37,7 @@ int Client::parseQuery()
         i = j;
     }
     queryBuff.erase(0, pos + 1);
+    qryType = 0;
     return !paras.empty() ? 0 : -1;
 }
 
@@ -97,6 +77,7 @@ int Client::parseBulkQuery()
     if(multiBulkCnt == 0) {
         queryBuff.erase(0, qry_pos);
         qry_pos = 0;
+        qryType = 0;
         return 0;
     }
     return -1;

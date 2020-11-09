@@ -12,13 +12,13 @@ void handleTask(const Task& task)
     leveldb::Status status = leveldb::DB::Open(options, "/tmp/testdb", &db);
 
     DbEvent event;
-    DbReqParser reqParser(task.getMsg());
+    DbReqParser reqParser(task);
     reqParser.parse(event);
-    DbOperator dbInst(db, task.getEventBase(), task.fd());
+    DbOperator dbInst(db, task.getEventBase(), task.fd);
     dbInst.handleEvent(event);
 }
 
-void dataUpdate_Entry()
+void dataUpdate_Entry(int notifyFd)
 {
     while(true) {
         auto& q = TaskQueues::getInstance();
