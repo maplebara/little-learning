@@ -8,7 +8,7 @@
 
 int setSockNonBlock(int fd);
 
-int listenSocket(uint16_t port);
+int listenSocket(unsigned short port);
 
 
 

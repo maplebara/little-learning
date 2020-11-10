@@ -6,69 +6,55 @@
 #include <unordered_map>
 #include <string>
 
-namespace {
-    DbResponse DB_SUCC_RSP;
-    DbResponse DB_FAIL_RSP(Status::Corruption("Normal Error!"));
-}
-
-AbstractDbResponse* db_set(const DbEvent& event, DB* db)
+int db_set(const vector<const string*>& paras, DB* db, Client* client)
 {
-    printf("set key[%s], value[%s]\n", event.cmd[1].ToString().c_str(), event.cmd[2].ToString().c_str());
-    auto res = db->Put(leveldb::WriteOptions(), event.cmd[1], event.cmd[2]);
-    return res.ok() ? &DB_SUCC_RSP : &DB_FAIL_RSP;
-}
-
-AbstractDbResponse* db_get(const DbEvent& event, DB* db)
-{
-    GetDbResponse* response = new GetDbResponse();
-    auto res = db->Get(leveldb::ReadOptions(), event.cmd[1], response->getRsp());
-    response->set(res);
-    return response;
-}
-
-AbstractDbResponse* db_del(const DbEvent& event, DB* db)
-{
-    auto res = db->Delete(leveldb::WriteOptions(), event.cmd[1]);
-    return res.ok() ? &DB_SUCC_RSP : &DB_FAIL_RSP;
-}
-
-void handleRsp(evutil_socket_t fd, short event_type, void* rsp)
-{
-    if(!rsp) {
-        fprintf(stderr, "No db response!\n");
-        return ;
+    printf("set key[%s], value[%s]\n", paras[0]->c_str(), paras[1]->c_str());
+    auto res = db->Put(leveldb::WriteOptions(), *paras[0], *paras[1]);
+    if(res.ok()) {
+        printf("db_set succ\n");
     }
-    auto* dbResponse = static_cast<AbstractDbResponse*>(rsp);
-    int st = dbResponse->response(fd);
-    if(st < 0) {
-        printf("handleRsp fail!\n");
+    return res.ok() ? 0 : -1;
+}
+
+int db_get(const vector<const string*>& paras, DB* db, Client* client)
+{
+    
+    auto res = db->Get(leveldb::ReadOptions(), *paras[0], &client->getOutputBuff());
+    if(res.ok()) {
+        client->getOutputBuff().append("\n");
+        return 0;
     }
-    if(dbResponse->id() == kGetDbResponse) {
-        delete dbResponse;
-    }
+    return -1;
+}
+
+int db_del(const vector<const string*>& paras, DB* db, Client* client)
+{
+    auto res = db->Delete(leveldb::WriteOptions(), *paras[0]);
+    return res.ok() ? 0 : -1;
 }
 
 namespace {
-    using Func = std::function<AbstractDbResponse* (const DbEvent& event, DB* db)>;
-
-    std::unordered_map<std::string, Func> funcs = {
-        {"set", db_set},
-        {"get", db_get},
-        {"del", db_del}
+    std::unordered_map<std::string, LevelDbCommand> cmdTable = {
+        {"set", {"set", 2, db_set}},
+        {"get", {"get", 1, db_get}},
+        {"del", {"del", 1, db_del}}
     };
 }
 
-
-void DbOperator::handleEvent(const DbEvent& event)
+int lookupCmdTable(const vector<string>& cmdPara, vector<LevelDbCommand>& cmds)
 {
-    auto func = funcs.find(event.cmd[0].ToString());
-    if(func == funcs.end()) {
-        printf("Not Found the command!");
-        return ;
+    int st = 0;
+    while(st < cmdPara.size()) {
+        if(!cmdTable.count(cmdPara[st]))
+            return -1;
+        auto cmd = cmdTable[cmdPara[st]];
+        for(int i = 0; i < cmd.paraNum && (st + 1) < cmdPara.size(); ++i) {
+            cmd.paras.push_back(&cmdPara[++st]);
+        }
+        ++st;
+        cmds.push_back(std::move(cmd));
     }
-    auto* rsp = func->second(event, this->db);
-    auto* levent = event_new(this->evBase, this->clientFd, EV_WRITE, handleRsp, rsp);
-    event_add(levent, NULL);
+    return 0;
 }
 
 

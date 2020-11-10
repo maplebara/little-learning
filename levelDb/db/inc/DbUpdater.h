@@ -3,7 +3,7 @@
 #include "net.h"
 #include "TaskQueue.h"
 
-void dataUpdate_Entry(int notifyFd);
+void dataUpdate_Entry();
 
 
 

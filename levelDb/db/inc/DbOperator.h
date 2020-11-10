@@ -21,6 +21,8 @@ private:
     int clientFd;
 };
 
+int lookupCmdTable(const vector<string>& cmdPara, vector<LevelDbCommand>& cmds);
+
 
 
 

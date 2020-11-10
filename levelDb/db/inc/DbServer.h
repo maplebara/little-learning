@@ -13,7 +13,8 @@ const int QUERY_BUFF_LEN = 14 * 1024;
 struct Client
 {
     Client() : Client(-1) {}
-    Client(int fd) : fd(fd), qryType(0), qry_pos(0), multiBulkCnt(0), bulkLen(-1) {}
+    Client(int fd) : isExited(false), fd(fd), qryType(0), 
+                        qry_pos(0), multiBulkCnt(0), bulkLen(-1) {}
 
     int processQuery();
     
@@ -21,11 +22,24 @@ struct Client
         std::swap(rhs, paras);
     }
 
+    string& getOutputBuff() {
+        return output;
+    }
+
+    void exit() {
+        isExited = true;
+    }
+
+    bool isExit() {
+        return isExited;
+    }
+
 private:
     int parseQuery();
     int parseBulkQuery();
 
 private:
+    bool isExited;
     int fd;
     int qryType;
     int qry_pos;
@@ -33,7 +47,7 @@ private:
     int multiBulkCnt;
     int bulkLen;
     vector<string> paras;
-    volatile string output;
+    string output;
 };
 
 struct DbServer

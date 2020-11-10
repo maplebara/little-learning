@@ -10,16 +10,20 @@ int Client::processQuery()
     ssize_t len = ::read(fd, &queryBuff.front(), QUERY_BUFF_LEN);
     if(len > 0) {
         queryBuff.resize(originLen + len);
+        printf("%d:%s", queryBuff.size(), queryBuff.c_str());
         if(!qryType) {
             qryType = queryBuff[0] == '*' ? 2 : 1;
         }
-        if(qryType == 2)
+        if(qryType == 2) {
             if(parseBulkQuery() == -1) return -1;
-        else 
+        }
+        else {
             if(parseQuery() == -1) return -1;
+        }
     } else {
         close(fd);
     }
+    printf("processQuery.succ\n");
     return 0;
 }
 
@@ -29,11 +33,15 @@ int Client::parseQuery()
     if(pos == std::string::npos) {
         return -1;
     }
+  //  printf("queryBuff:%s, pos:%d\n", queryBuff.c_str(), pos);
     for(int i = 0; i < (int)pos && queryBuff[pos] != '\r'; ++i) {
+       // printf("queryBuff[%d]:%c\n", i, queryBuff[i]);
         if(queryBuff[i] == ' ') continue;
         int j = i;
-        while(j < pos && (queryBuff[j] != ' ' || queryBuff[j] != '\r')) ++j;
+        while(j < pos && (queryBuff[j] != ' ' && queryBuff[j] != '\r' && queryBuff[j] != '\n')) ++j;
+        //printf("i=%d, j=%d\n", i, j);
         paras.push_back(queryBuff.substr(i, j - i));
+        printf("%s\n", paras.back().c_str());
         i = j;
     }
     queryBuff.erase(0, pos + 1);

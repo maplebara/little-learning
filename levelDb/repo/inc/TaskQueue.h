@@ -18,8 +18,8 @@ struct TaskQueue : usi::Singleton<TaskQueue<MAX_BUF>>
         if(!pq.write(task)) {
             std::unique_lock<std::mutex> lk(mt);
             not_empty.wait(lk, [task, this]{return pq.write(task); });
-            not_full.notify_all();
         }
+        not_full.notify_all();
     }
 
     void read(Task& record) {
@@ -28,6 +28,7 @@ struct TaskQueue : usi::Singleton<TaskQueue<MAX_BUF>>
             not_full.wait(lk, [&record, this]{return pq.read(record);});
             not_empty.notify_all();
         }
+        not_empty.notify_all();
     }
 
 private:

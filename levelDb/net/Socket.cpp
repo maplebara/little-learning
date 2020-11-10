@@ -33,7 +33,8 @@ int listenSocket(uint16_t port)
     int sockfd;
     sockfd = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK|SOCK_CLOEXEC, IPPROTO_TCP);
     assert(sockfd > 0);
-
+    int val = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR|SO_REUSEPORT, &val, sizeof val);
     sockaddr_in serverAddr;
     memset(&serverAddr, 0x00, sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;

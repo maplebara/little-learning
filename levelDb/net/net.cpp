@@ -13,11 +13,12 @@
 #include <sys/eventfd.h>
 
 const uint16_t listenPort = 12357;
-const int QUERY_BUFF_LEN = 14 * 1024;
 DbServer server;
+int notifyFd = -1;
 
 void processInput(evutil_socket_t fd, short event_type, void* arg)
 {
+    printf("client fd is %d\n", fd);
     auto client = server.getClient(fd);
     if(!client) {
         printf("No valid client, quit!\n");
@@ -28,13 +29,35 @@ void processInput(evutil_socket_t fd, short event_type, void* arg)
         Task task;
         task.fd = fd;
         client->forwardTask(task.cmd);
+        for(auto& s : task.cmd) {
+            printf("%s ", s.c_str());
+        }
+        printf("\n");
         TaskQueues::getInstance().write(std::move(task));
+    }
+    else {
+        printf("processQuery fail!\n");
     }
 }
 
-void reply(evutil_socket_t fd, short event_type, void* arg)
+void reply(evutil_socket_t nfd, short event_type, void* arg)
 {
-
+    long long fd = -1;
+    read(nfd, &fd, 8);
+    ++fd;
+    auto* client = server.getClient((int)fd);
+    if(!client) {
+        printf("No client, the fd is %d\n", (int)fd);
+        return ;
+    }
+    if(client->isExit()) {
+        close(fd);
+    } else {
+        auto& output = client->getOutputBuff();
+        if(!output.empty()) {
+            write((int)fd, output.c_str(), output.size());
+        }
+    }
 }
 
 void acceptEventHandler(evutil_socket_t sockfd, short event_type, void *aeEvent)
@@ -70,15 +93,15 @@ void eventLoop()
         exit(1);
     }
 
-    int ev_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
-    if(ev_fd < 0) {
+    notifyFd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
+    if(notifyFd < 0) {
         perror("Create eventfd fail");
     }
-    auto* notifyEvent = event_new(evBase, ev_fd, EV_READ|EV_PERSIST, reply, NULL);
+    auto* notifyEvent = event_new(evBase, notifyFd, EV_READ|EV_PERSIST, reply, NULL);
     if(event_add(notifyEvent, NULL) != 0) {
         exit(1);
     }
-    std::thread clientReqHandler(dataUpdate_Entry, ev_fd);
+    std::thread clientReqHandler(dataUpdate_Entry);
     event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY); 
 }
 
