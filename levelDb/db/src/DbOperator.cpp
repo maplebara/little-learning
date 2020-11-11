@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <string>
 
-int db_set(const vector<const string*>& paras, DB* db, Client* client)
+int db_set(const vector<const string*>& paras, DB* db, std::shared_ptr<Client>& client)
 {
     printf("set key[%s], value[%s]\n", paras[0]->c_str(), paras[1]->c_str());
     auto res = db->Put(leveldb::WriteOptions(), *paras[0], *paras[1]);
@@ -16,7 +16,7 @@ int db_set(const vector<const string*>& paras, DB* db, Client* client)
     return res.ok() ? 0 : -1;
 }
 
-int db_get(const vector<const string*>& paras, DB* db, Client* client)
+int db_get(const vector<const string*>& paras, DB* db, std::shared_ptr<Client>& client)
 {
     
     auto res = db->Get(leveldb::ReadOptions(), *paras[0], &client->getOutputBuff());
@@ -27,7 +27,7 @@ int db_get(const vector<const string*>& paras, DB* db, Client* client)
     return -1;
 }
 
-int db_del(const vector<const string*>& paras, DB* db, Client* client)
+int db_del(const vector<const string*>& paras, DB* db, std::shared_ptr<Client>& client)
 {
     auto res = db->Delete(leveldb::WriteOptions(), *paras[0]);
     return res.ok() ? 0 : -1;

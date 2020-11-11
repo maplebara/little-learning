@@ -3,6 +3,8 @@
 #include <event2/event.h>
 #include <string>
 
+extern DbServer server;
+
 int Client::processQuery()
 {
     int originLen = queryBuff.size();
@@ -10,20 +12,19 @@ int Client::processQuery()
     ssize_t len = ::read(fd, &queryBuff.front(), QUERY_BUFF_LEN);
     if(len > 0) {
         queryBuff.resize(originLen + len);
-        printf("%d:%s", queryBuff.size(), queryBuff.c_str());
         if(!qryType) {
             qryType = queryBuff[0] == '*' ? 2 : 1;
         }
         if(qryType == 2) {
-            if(parseBulkQuery() == -1) return -1;
+            if(parseBulkQuery() < 0) return -1;
         }
         else {
-            if(parseQuery() == -1) return -1;
+            if(parseQuery() < 0) return -1;
         }
     } else {
-        close(fd);
+        exit();
+        return -1;
     }
-    printf("processQuery.succ\n");
     return 0;
 }
 
@@ -33,15 +34,11 @@ int Client::parseQuery()
     if(pos == std::string::npos) {
         return -1;
     }
-  //  printf("queryBuff:%s, pos:%d\n", queryBuff.c_str(), pos);
     for(int i = 0; i < (int)pos && queryBuff[pos] != '\r'; ++i) {
-       // printf("queryBuff[%d]:%c\n", i, queryBuff[i]);
         if(queryBuff[i] == ' ') continue;
         int j = i;
-        while(j < pos && (queryBuff[j] != ' ' && queryBuff[j] != '\r' && queryBuff[j] != '\n')) ++j;
-        //printf("i=%d, j=%d\n", i, j);
+        while(j < pos && (queryBuff[j] != ' ' && queryBuff[j] != '\r')) ++j;
         paras.push_back(queryBuff.substr(i, j - i));
-        printf("%s\n", paras.back().c_str());
         i = j;
     }
     queryBuff.erase(0, pos + 1);
@@ -89,6 +86,54 @@ int Client::parseBulkQuery()
         return 0;
     }
     return -1;
+}
+
+void Client::reReply(int fd, event_base* evBase)
+{
+    auto client = server.getClient(fd);
+    auto& output = client->getOutputBuff();
+    if(!output.empty()) {
+        int st = write(fd, output.c_str(), output.size());
+        if(st > 0) {
+            output.erase(0, st);
+            if(!output.empty()) client->pendReply(evBase);
+        } else if(st < 0 && errno == EAGAIN){
+            client->pendReply(evBase, fd);
+        }
+        else {
+            server.freeClient(fd);
+            close(fd);
+        }
+    }
+}
+
+void Client::reply(int nfd, short event_type, void* arg)
+{
+    long long fd = -1;
+    read(nfd, &fd, 8);
+    ++fd;
+    auto client = server.getClient((int)fd);
+    if(!client || (client->getOutputBuff().empty() && !client->isExit())) {
+        printf("No output, the fd is %d\n", (int)fd);
+        return ;
+    }
+    if(client->isExit()) {
+        server.freeClient(fd);
+        close(fd);
+        return ;
+    }
+    auto& output = client->getOutputBuff();
+    int st = write((int)fd, output.c_str(), output.size());
+    if(st == output.size()) {
+        output.clear();
+        printf("reply complete.");
+    } else if(st < 0 && errno != EAGAIN) {
+        server.freeClient(fd);
+        close(fd);
+    }
+    else {
+        client->pendReply((event_base*)(arg), fd);
+    }
 }
 
 

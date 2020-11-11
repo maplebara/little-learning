@@ -11,19 +11,13 @@ using leveldb::DB;
 using std::vector;
 using std::string;
 
-struct DbEvent
-{
-    Slice cmd[3];
-};
-
-
 struct Task
 {
     int fd;
     vector<string> cmd;
 };
 
-typedef int (*cmdCallback)(const vector<const string*>&, DB*, Client*);
+typedef int (*cmdCallback)(const vector<const string*>&, DB*, std::shared_ptr<Client>&);
 
 struct LevelDbCommand
 {
