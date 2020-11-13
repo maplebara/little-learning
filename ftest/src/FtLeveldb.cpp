@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include <leveldb/db.h>
-#include "net.h"
+#include "DbServer.h"
 
 class FtLevelDb : public ::testing::Test {
 protected:
@@ -9,7 +9,6 @@ protected:
 
     void TearDown() override {  }
 };
-
 
 TEST_F(FtLevelDb, database_open_seccess_test)
 {
@@ -22,7 +21,7 @@ TEST_F(FtLevelDb, database_open_seccess_test)
 
 TEST_F(FtLevelDb, database_net_seccess_test)
 {
-    eventLoop();
+    DbServer::eventLoop();
 }
 
 

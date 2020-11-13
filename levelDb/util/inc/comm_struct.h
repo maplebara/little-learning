@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 #include "leveldb/db.h"
-#include "DbServer.h"
+#include <memory>
+#include "DbClient.h"
 
 using leveldb::Slice;
 using leveldb::DB;

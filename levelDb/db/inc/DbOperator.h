@@ -9,17 +9,17 @@ using leveldb::Slice;
 using leveldb::DB;
 using leveldb::Status;
 
-struct DbOperator
-{
-    DbOperator(DB* db, event_base* evBase, int fd) : db(db), evBase(evBase), clientFd(fd)  {}
+// struct DbOperator
+// {
+//     DbOperator(DB* db, event_base* evBase, int fd) : db(db), evBase(evBase), clientFd(fd)  {}
 
-    void handleEvent(const DbEvent& event);
+//     void handleEvent(const DbEvent& event);
 
-private:
-    DB* db;
-    event_base* evBase;
-    int clientFd;
-};
+// private:
+//     DB* db;
+//     event_base* evBase;
+//     int clientFd;
+// };
 
 int lookupCmdTable(const vector<string>& cmdPara, vector<LevelDbCommand>& cmds);
 

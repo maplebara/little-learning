@@ -1,7 +1,6 @@
 #include "DbOperator.h"
 #include <unistd.h>
 #include <string.h>
-#include "DbStatus.h"
 #include <functional>
 #include <unordered_map>
 #include <string>
@@ -10,9 +9,6 @@ int db_set(const vector<const string*>& paras, DB* db, std::shared_ptr<Client>& 
 {
     printf("set key[%s], value[%s]\n", paras[0]->c_str(), paras[1]->c_str());
     auto res = db->Put(leveldb::WriteOptions(), *paras[0], *paras[1]);
-    if(res.ok()) {
-        printf("db_set succ\n");
-    }
     return res.ok() ? 0 : -1;
 }
 

@@ -1,119 +1,81 @@
 #include "DbServer.h"
-#include "Socket.h"
 #include <event2/event.h>
-#include <string>
+#include <cassert>
+#include <sys/eventfd.h>
+#include "Socket.h"
+#include <unistd.h>
+#include <thread>
+#include "DbOperator.h"
 
-extern DbServer server;
+const uint16_t listenPort = 12356;
+DbServer server;
+int notifyFd = -1;
 
-int Client::processQuery()
+void DbServer::eventLoop()
 {
-    int originLen = queryBuff.size();
-    queryBuff.resize(originLen + QUERY_BUFF_LEN);
-    ssize_t len = ::read(fd, &queryBuff.front(), QUERY_BUFF_LEN);
-    if(len > 0) {
-        queryBuff.resize(originLen + len);
-        if(!qryType) {
-            qryType = queryBuff[0] == '*' ? 2 : 1;
-        }
-        if(qryType == 2) {
-            if(parseBulkQuery() < 0) return -1;
-        }
-        else {
-            if(parseQuery() < 0) return -1;
-        }
-    } else {
-        exit();
-        return -1;
+    int sockfd = listenSocket(listenPort);
+    auto* evBase = event_base_new();
+    assert(evBase);
+
+    auto* listenEvent = event_new(evBase, sockfd, EV_READ|EV_PERSIST, DbServer::acceptEventHandler, evBase);
+    if(event_add(listenEvent, NULL) != 0) {
+        exit(1);
     }
-    return 0;
+
+    notifyFd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
+    assert(notifyFd > 0);
+    auto* notifyEvent = event_new(evBase, notifyFd, EV_READ|EV_PERSIST, reply, evBase);
+    if(event_add(notifyEvent, NULL) != 0) {
+        exit(1);
+    }
+    std::thread clientReqHandler(dataUpdate_Entry);
+    clientReqHandler.detach();
+    event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY); 
 }
 
-int Client::parseQuery()
+void DbServer::acceptEventHandler(evutil_socket_t sockfd, short event_type, void* ev)
 {
-    auto pos = queryBuff.find('\n', qry_pos);
-    if(pos == std::string::npos) {
-        return -1;
-    }
-    for(int i = 0; i < (int)pos && queryBuff[pos] != '\r'; ++i) {
-        if(queryBuff[i] == ' ') continue;
-        int j = i;
-        while(j < pos && (queryBuff[j] != ' ' && queryBuff[j] != '\r')) ++j;
-        paras.push_back(queryBuff.substr(i, j - i));
-        i = j;
-    }
-    queryBuff.erase(0, pos + 1);
-    qryType = 0;
-    return !paras.empty() ? 0 : -1;
+    sockaddr_in cliAddr;
+    socklen_t cliLen = sizeof(sockaddr_in);
+    int fd = ::accept(sockfd, (sockaddr*)&cliAddr, &cliLen);
+    assert(fd > 0);
+    setSockNonBlock(fd);
+    server.addClientIfNotExited(fd);
+    auto* levent = event_new((event_base*)ev, fd, EV_READ|EV_PERSIST, DbServer::processInput, NULL);
+    event_add(levent, NULL);
 }
 
-int Client::parseBulkQuery()
-{
-    size_t pos = 0;
-    if(!multiBulkCnt) {
-        pos = queryBuff.find('\n');
-        if(pos == std::string::npos) {
-            return -1;
-        }
-        if(pos > 1) {
-            if(queryBuff[pos - 1] == '\r') multiBulkCnt = stoi(queryBuff.substr(1, pos - 2));
-            else multiBulkCnt = stoi(queryBuff.substr(1, pos - 1));
-        }
-        qry_pos = pos + 1;
-    }
-    if(qry_pos >= queryBuff.size()) return -1;
-    while(multiBulkCnt > 0) {
-        if(bulkLen == -1) {
-            pos = queryBuff.find('\n', qry_pos);
-            if(pos == std::string::npos) {
-                return -1;
-            }
-            if(pos - qry_pos > 1) {
-                if(queryBuff[pos - 1] == '\r') bulkLen = stoi(queryBuff.substr(qry_pos + 1, pos - qry_pos - 1));
-                else bulkLen = stoi(queryBuff.substr(qry_pos + 1, pos - qry_pos));
-            }
-            qry_pos = pos + 1;
-        }
-        if(qry_pos + bulkLen + 2 >= queryBuff.size()) return -1;
-        paras.push_back(queryBuff.substr(qry_pos, bulkLen));
-        qry_pos += bulkLen + 2;
-        --multiBulkCnt;
-        bulkLen = -1;
-    }
-    if(multiBulkCnt == 0) {
-        queryBuff.erase(0, qry_pos);
-        qry_pos = 0;
-        qryType = 0;
-        return 0;
-    }
-    return -1;
-}
-
-void Client::reReply(int fd, event_base* evBase)
+void DbServer::processInput(evutil_socket_t fd, short event_type, void* arg)
 {
     auto client = server.getClient(fd);
-    auto& output = client->getOutputBuff();
-    if(!output.empty()) {
-        int st = write(fd, output.c_str(), output.size());
-        if(st > 0) {
-            output.erase(0, st);
-            if(!output.empty()) client->pendReply(evBase);
-        } else if(st < 0 && errno == EAGAIN){
-            client->pendReply(evBase, fd);
-        }
-        else {
-            server.freeClient(fd);
-            close(fd);
-        }
+    if(!client) {
+        printf("No valid client fd[%d], quit!\n", fd);
+        close(fd);
+        return ;
+    }
+    if(client->processQuery() == 0) {
+        Task task;
+        task.fd = fd;
+        client->forwardTask(task.cmd);
+        TaskQueues::getInstance().write(std::move(task));
+    }
+    else if(client->isExit()) {
+        server.freeClient(fd);
+        close(fd);
     }
 }
 
-void Client::reply(int nfd, short event_type, void* arg)
+void DbServer::reply(int nfd, short event_type, void* arg)
 {
     long long fd = -1;
     read(nfd, &fd, 8);
-    ++fd;
     auto client = server.getClient((int)fd);
-    if(!client || (client->getOutputBuff().empty() && !client->isExit())) {
+    if(!client) {
+        printf("Invalid fd %d.\n", (int)fd);
+        close(fd);
+        return ;
+    }
+    if(client->getOutputBuff().empty() && !client->isExit()) {
         printf("No output, the fd is %d\n", (int)fd);
         return ;
     }
@@ -123,20 +85,104 @@ void Client::reply(int nfd, short event_type, void* arg)
         return ;
     }
     auto& output = client->getOutputBuff();
-    int st = write((int)fd, output.c_str(), output.size());
-    if(st == output.size()) {
-        output.clear();
-        printf("reply complete.");
-    } else if(st < 0 && errno != EAGAIN) {
-        server.freeClient(fd);
-        close(fd);
-    }
-    else {
-        client->pendReply((event_base*)(arg), fd);
+    {
+        std::unique_lock<std::mutex>(client->getLock());
+        int st = write((int)fd, output.c_str(), output.size());
+        if(st == output.size()) {
+            output.clear();
+            printf("reply complete.");
+        } else if(st < 0 && errno != EAGAIN) {
+            server.freeClient(fd);
+            close(fd);
+        }
+        else {
+            client->pendReply((event_base*)(arg));
+        }
     }
 }
 
+void DbServer::dataUpdate_Entry()
+{
+    leveldb::DB* db;
+    leveldb::Options options;
+    options.create_if_missing = true;
+    leveldb::Status status = leveldb::DB::Open(options, "/tmp/testdb", &db);
+    if(!status.ok()) {
+        printf("open db fail\n");
+    }
+    else {
+        while(true) {
+            auto& q = TaskQueues::getInstance();
+            Task t;
+            q.read(t);
+            handleTask(t, db);
+        }
+    }
+}
 
+int DbServer::exec(const Task& task, leveldb::DB* db)
+{
+    std::vector<LevelDbCommand> cmds;
+    if(lookupCmdTable(task.cmd, cmds) < 0) {
+        printf("Invalid cmd parameter.\n");
+        return -1;
+    }
+    auto client = server.getClient(task.fd);
+    if(!client) {
+        printf("No the client!\n");
+        return -1;
+    }
+
+    {
+        std::unique_lock<std::mutex>(client->getLock());
+        for(auto& command : cmds) {
+            if(command.cmd(command.paras, db, client) < 0){
+                client->getOutputBuff().append("Error!\n");
+                printf("exec cmd fail.\n");
+            }
+            else {
+                client->getOutputBuff().append("OK!\n");
+            }
+        }
+    }
+    return 0;
+}
+
+void DbServer::handleTask(const Task& task, leveldb::DB* db)
+{
+    auto client = server.getClient(task.fd);
+    if(task.cmd[0] == "exit") {
+        client->exit();
+    } 
+    else if(exec(task, db) < 0) {
+        printf("exec command fail.\n");
+    }
+    long long fd = task.fd;
+    if(write(notifyFd, &fd, sizeof fd) < 0) {
+        perror("notify I/O thread fail");
+    }
+}
+
+void DbServer::addClientIfNotExited(int fd) {
+    if(!clients.count(fd)) {
+        clients.emplace(fd, make_shared<Client>(fd));
+    }
+}
+
+shared_ptr<Client> DbServer::getClient(int fd) {
+    if(clients.count(fd)) {
+        return clients[fd];
+    }
+    else {
+        return nullptr;
+    }
+}
+
+void DbServer::freeClient(int fd) {
+    if(!clients.count(fd)) {
+        clients.erase(fd);
+    }
+}
 
 
 
