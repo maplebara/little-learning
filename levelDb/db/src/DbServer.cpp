@@ -5,7 +5,7 @@
 #include "Socket.h"
 #include <unistd.h>
 #include <thread>
-#include "DbOperator.h"
+#include "DbProxy.h"
 
 const uint16_t listenPort = 12356;
 DbServer server;
@@ -111,51 +111,32 @@ void DbServer::dataUpdate_Entry()
         printf("open db fail\n");
     }
     else {
+        DbProxy dbProxy(db);
         while(true) {
             auto& q = TaskQueues::getInstance();
             Task t;
             q.read(t);
-            handleTask(t, db);
+            handleTask(t, dbProxy);
         }
     }
 }
 
-int DbServer::exec(const Task& task, leveldb::DB* db)
-{
-    std::vector<LevelDbCommand> cmds;
-    if(lookupCmdTable(task.cmd, cmds) < 0) {
-        printf("Invalid cmd parameter.\n");
-        return -1;
-    }
-    auto client = server.getClient(task.fd);
-    if(!client) {
-        printf("No the client!\n");
-        return -1;
-    }
-
-    {
-        std::unique_lock<std::mutex>(client->getLock());
-        for(auto& command : cmds) {
-            if(command.cmd(command.paras, db, client) < 0){
-                client->getOutputBuff().append("Error!\n");
-                printf("exec cmd fail.\n");
-            }
-            else {
-                client->getOutputBuff().append("OK!\n");
-            }
-        }
-    }
-    return 0;
-}
-
-void DbServer::handleTask(const Task& task, leveldb::DB* db)
+void DbServer::handleTask(const Task& task, DbProxy& db)
 {
     auto client = server.getClient(task.fd);
     if(task.cmd[0] == "exit") {
         client->exit();
     } 
-    else if(exec(task, db) < 0) {
-        printf("exec command fail.\n");
+    else {
+        if(db.handleCmd(task.cmd, client) == 0) {
+            std::unique_lock<std::mutex> mk(client->getLock());
+            client->getOutputBuff().append("OK!\n");
+        }
+        else {
+            std::unique_lock<std::mutex> mk(client->getLock());
+            client->getOutputBuff().append("Error!\n");
+            printf("exec cmd fail.\n");
+        }
     }
     long long fd = task.fd;
     if(write(notifyFd, &fd, sizeof fd) < 0) {

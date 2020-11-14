@@ -7,6 +7,7 @@
 #include "DbClient.h"
 #include "TaskQueue.h"
 #include "comm_struct.h"
+#include "DbProxy.h"
 
 using std::unordered_map;
 using std::shared_ptr;
@@ -26,8 +27,7 @@ private:
     static void processInput(evutil_socket_t fd, short event_type, void* arg);
     static void reply(int nfd, short event_type, void* arg);
 
-    static void handleTask(const Task& task, leveldb::DB* db);
-    static int exec(const Task& task, leveldb::DB* db);
+    static void handleTask(const Task& task, DbProxy& db);
 
 private:
     unordered_map<int, shared_ptr<Client>> clients;
