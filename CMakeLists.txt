@@ -24,7 +24,10 @@ ${current_dir}/levelDb/db/inc
 FILE(GLOB_RECURSE  SRC_LIST
     "${ft_dir}/src/*.cpp"
     "${code_dir}/src/*"
-    "${current_dir}/levelDb/*"
+    "${current_dir}/levelDb/db/*"
+    "${current_dir}/levelDb/net/*"
+    "${current_dir}/levelDb/repo/*"
+    "${current_dir}/levelDb/util/*"
 )
 
 add_subdirectory(${3rd_dir}/gtest)
@@ -43,4 +46,4 @@ LINK_DIRECTORIES(${lib_dir})
 
 ADD_EXECUTABLE(littleLearning ${SRC_LIST})
 
-TARGET_LINK_LIBRARIES(littleLearning hiredis leveldb gtest event pthread)
+TARGET_LINK_LIBRARIES(littleLearning hiredis leveldb gtest event event_pthreads pthread)

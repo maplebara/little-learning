@@ -10,7 +10,7 @@ protected:
     void TearDown() override {  }
 };
 
-TEST_F(FtLevelDb, database_open_seccess_test)
+TEST_F(FtLevelDb, DISABLED_database_open_seccess_test)
 {
     leveldb::DB* db;
     leveldb::Options options;
@@ -19,7 +19,7 @@ TEST_F(FtLevelDb, database_open_seccess_test)
     ASSERT_TRUE(status.ok());
 }
 
-TEST_F(FtLevelDb, database_net_seccess_test)
+TEST_F(FtLevelDb, DISABLED_database_net_seccess_test)
 {
     DbServer::eventLoop();
 }

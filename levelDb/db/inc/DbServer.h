@@ -8,6 +8,7 @@
 #include "TaskQueue.h"
 #include "comm_struct.h"
 #include "DbProxy.h"
+#include <signal.h>
 
 using std::unordered_map;
 using std::shared_ptr;
@@ -15,7 +16,11 @@ using std::make_shared;
 
 struct DbServer
 {
-    void addClientIfNotExited(int fd);
+    DbServer() {
+        signal(SIGPIPE, SIG_IGN);
+    }
+
+    void addClientIfNotExited(int fd, event_base* ev);
     shared_ptr<Client> getClient(int fd);
     void freeClient(int fd);
 
@@ -24,7 +29,6 @@ struct DbServer
 
 private:
     static void acceptEventHandler(evutil_socket_t sockfd, short event_type, void* ev);
-    static void processInput(evutil_socket_t fd, short event_type, void* arg);
     static void reply(int nfd, short event_type, void* arg);
 
     static void handleTask(const Task& task, DbProxy& db);

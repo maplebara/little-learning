@@ -5,6 +5,26 @@
 
 extern DbServer server;
 
+void Client::processInput(evutil_socket_t fd, short event_type, void* arg)
+{
+    auto client = server.getClient(fd);
+    if(!client) {
+        printf("No valid client fd[%d], quit!\n", fd);
+        close(fd);
+        return ;
+    }
+    if(client->processQuery() == 0) {
+        Task task;
+        task.fd = fd;
+        client->forwardTask(task.cmd);
+        TaskQueues::getInstance().write(std::move(task));
+    }
+    else if(client->isExit()) {
+        server.freeClient(fd);
+        close(fd);
+    }
+}
+
 int Client::processQuery()
 {
     int originLen = queryBuff.size();
@@ -12,6 +32,7 @@ int Client::processQuery()
     ssize_t len = ::read(fd, &queryBuff.front(), QUERY_BUFF_LEN);
     if(len > 0) {
         queryBuff.resize(originLen + len);
+        printf("%s", queryBuff.c_str());
         if(!qryType) {
             qryType = queryBuff[0] == '*' ? 2 : 1;
         }

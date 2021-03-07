@@ -1,5 +1,6 @@
 #include "DbServer.h"
 #include <event2/event.h>
+#include <event2/thread.h>
 #include <cassert>
 #include <sys/eventfd.h>
 #include "Socket.h"
@@ -13,6 +14,8 @@ int notifyFd = -1;
 
 void DbServer::eventLoop()
 {
+    int res = evthread_use_pthreads();
+    assert(res == 0);
     int sockfd = listenSocket(listenPort);
     auto* evBase = event_base_new();
     assert(evBase);
@@ -30,7 +33,7 @@ void DbServer::eventLoop()
     }
     std::thread clientReqHandler(dataUpdate_Entry);
     clientReqHandler.detach();
-    event_base_loop(evBase, EVLOOP_NO_EXIT_ON_EMPTY); 
+    event_base_dispatch(evBase); 
 }
 
 void DbServer::acceptEventHandler(evutil_socket_t sockfd, short event_type, void* ev)
@@ -40,29 +43,7 @@ void DbServer::acceptEventHandler(evutil_socket_t sockfd, short event_type, void
     int fd = ::accept(sockfd, (sockaddr*)&cliAddr, &cliLen);
     assert(fd > 0);
     setSockNonBlock(fd);
-    server.addClientIfNotExited(fd);
-    auto* levent = event_new((event_base*)ev, fd, EV_READ|EV_PERSIST, DbServer::processInput, NULL);
-    event_add(levent, NULL);
-}
-
-void DbServer::processInput(evutil_socket_t fd, short event_type, void* arg)
-{
-    auto client = server.getClient(fd);
-    if(!client) {
-        printf("No valid client fd[%d], quit!\n", fd);
-        close(fd);
-        return ;
-    }
-    if(client->processQuery() == 0) {
-        Task task;
-        task.fd = fd;
-        client->forwardTask(task.cmd);
-        TaskQueues::getInstance().write(std::move(task));
-    }
-    else if(client->isExit()) {
-        server.freeClient(fd);
-        close(fd);
-    }
+    server.addClientIfNotExited(fd, (event_base*)ev);
 }
 
 void DbServer::reply(int nfd, short event_type, void* arg)
@@ -144,9 +125,11 @@ void DbServer::handleTask(const Task& task, DbProxy& db)
     }
 }
 
-void DbServer::addClientIfNotExited(int fd) {
+void DbServer::addClientIfNotExited(int fd, event_base* ev) {
     if(!clients.count(fd)) {
-        clients.emplace(fd, make_shared<Client>(fd));
+        auto p = make_shared<Client>(fd);
+        p->setEvent(ev);
+        clients.emplace(fd, p);
     }
 }
 
